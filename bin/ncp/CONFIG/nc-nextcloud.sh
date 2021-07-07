@@ -184,6 +184,11 @@ EOF
     SSLEngine on
     SSLCertificateFile      /etc/ssl/certs/ssl-cert-snakeoil.pem
     SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+
+    # For notify_push app in NC21
+    ProxyPass /push/ws ws://127.0.0.1:7867/ws
+    ProxyPass /push/ http://127.0.0.1:7867/
+    ProxyPassReverse /push/ http://127.0.0.1:7867/
   </VirtualHost>
   <Directory /var/www/nextcloud/>
     Options +FollowSymlinks
@@ -219,6 +224,25 @@ EOF
   </Directory>
 </VirtualHost>
 EOF
+
+  # for notify_push app in NC21
+  a2enmod proxy
+  a2enmod proxy_http
+  a2enmod proxy_wstunnel
+
+  cat > /etc/systemd/system/notify_push.service <<EOF
+[Unit]
+Description = Push daemon for Nextcloud clients
+
+[Service]
+Environment = PORT=7867 # Change if you already have something running on this port
+ExecStart = /path/to/push/binary/notify_push /path/to/nextcloud/config/config.php
+User=www-data
+
+[Install]
+WantedBy = multi-user.target
+EOF
+  [[ -f /.docker-image ]] || systemctl enable notify_push # TODO in docker
 
   # some added security
   sed -i 's|^ServerSignature .*|ServerSignature Off|' /etc/apache2/conf-enabled/security.conf

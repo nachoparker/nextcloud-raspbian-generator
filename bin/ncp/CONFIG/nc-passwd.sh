@@ -24,10 +24,13 @@ configure()
   # Run cron.php once now to get all checks right in CI.
   sudo -u www-data php /var/www/nextcloud/cron.php
 
-  # activate NCP
+  # activate NCP # TODO check, only if not activated # TODO `nextcloudpi` will not resolve from outside
   a2ensite  ncp nextcloud
   a2dissite ncp-activation
-  bash -c "sleep 1.5 && service apache2 reload" &>/dev/null &
+  bash -c "sleep 1.5 && service apache2 reload
+  && ncc config:system:set trusted_proxies 10 --value=$(dig nextcloudpi +short) >> /var/log/ncp.log
+  && ncc notify_push:setup https://nextcloudpi/push >> /var/log/ncp.log
+  " &>/dev/null &
 }
 
 install() { :; }
